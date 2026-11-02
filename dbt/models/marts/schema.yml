@@ -1,0 +1,96 @@
+version: 2
+
+models:
+  - name: mart_daily_state_metrics
+    description: "Дневной оборот и статистика размеров покупок по штатам."
+    columns:
+      - name: transaction_date
+        description: "Календарная дата операций."
+        data_tests: [not_null]
+      - name: state
+        description: "Штат, которому принадлежит агрегат."
+        data_tests: [not_null]
+      - name: transaction_count
+        description: "Число операций за день в штате."
+        data_tests: [not_null]
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [transaction_date, state]
+      - dbt_expectations.expect_column_values_to_be_between:
+          column_name: large_transaction_pct
+          min_value: 0
+          max_value: 100
+
+  - name: mart_fraud_by_category
+    description: "Сравнение количества и денежных объёмов мошеннических операций по категориям."
+    columns:
+      - name: category
+        description: "Категория покупки."
+        data_tests: [not_null, unique]
+      - name: fraud_rate_pct
+        description: "Доля мошенничеств в процентах от 0 до 100."
+        data_tests: [not_null]
+
+  - name: mart_fraud_by_state
+    description: "Географическое распределение транзакций и фрода."
+    columns:
+      - name: state
+        description: "Двухбуквенный код штата."
+        data_tests: [not_null, unique]
+      - name: fraud_rate_pct
+        description: "Доля фрода в процентах."
+        data_tests: [not_null]
+
+  - name: mart_customer_risk_profile
+    description: "История, частота фрода и уровень риска для каждого составного ключа клиента."
+    columns:
+      - name: customer_key
+        description: "Составной ключ из имени, фамилии, почтового индекса и улицы; не является официальным ID."
+        data_tests: [not_null, unique]
+      - name: risk_level
+        description: "HIGH при fraud_rate от 20%, MEDIUM от 5%, иначе LOW."
+        data_tests:
+          - accepted_values:
+              values: [HIGH, MEDIUM, LOW]
+
+  - name: mart_hourly_fraud_pattern
+    description: "Доля мошенничества в зависимости от дня недели и часа."
+    columns:
+      - name: day_of_week
+        description: "День недели ClickHouse: 1 — понедельник, 7 — воскресенье."
+        data_tests: [not_null]
+      - name: day_name
+        description: "Название дня недели, рассчитанное макросом пакета dbt_date."
+        data_tests: [not_null]
+      - name: transaction_hour
+        description: "Час суток от 0 до 23."
+        data_tests: [not_null]
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [day_of_week, transaction_hour]
+
+  - name: mart_merchant_analytics
+    description: "Оборот и сигналы риска по каждому мерчанту."
+    columns:
+      - name: merchant_name
+        description: "Название мерчанта."
+        data_tests: [not_null, unique]
+      - name: is_suspicious
+        description: "Флаг: fraud_rate не ниже 10% или не менее 20 операций с фродом."
+        data_tests:
+          - accepted_values:
+              values: [0, 1]
+
+unit_tests:
+  - name: stg_transactions_derives_calendar_and_amount_segment
+    description: "Проверяем вычисляемые дату, час, день недели и сегмент суммы."
+    model: stg_transactions
+    given:
+      - input: source('transactions_db', 'transactions')
+        rows:
+          - {transaction_time: '2024-01-01 10:30:00', merch: ' Shop ', cat_id: 'Food', amount: 24.99, name_1: 'Ada', name_2: 'Lovelace', gender: 'F', street: '1 Main', one_city: 'Town', us_state: 'ca', post_code: '90001', lat: 1.0, lon: 2.0, population_city: 100, jobs: 'Student', merchant_lat: 3.0, merchant_lon: 4.0, target: 0}
+          - {transaction_time: '2024-01-01 11:30:00', merch: ' Shop ', cat_id: 'Food', amount: 100.00, name_1: 'Ada', name_2: 'Lovelace', gender: 'F', street: '1 Main', one_city: 'Town', us_state: 'ca', post_code: '90001', lat: 1.0, lon: 2.0, population_city: 100, jobs: 'Student', merchant_lat: 3.0, merchant_lon: 4.0, target: 1}
+    expect:
+      rows:
+        - {transaction_date: '2024-01-01', transaction_hour: 10, day_of_week: 1, amount_segment: 'small', state: 'CA', category: 'food', is_fraud: 0}
+        - {transaction_date: '2024-01-01', transaction_hour: 11, day_of_week: 1, amount_segment: 'large', state: 'CA', category: 'food', is_fraud: 1}

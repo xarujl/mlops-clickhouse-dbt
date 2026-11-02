@@ -1,0 +1,32 @@
+version: 2
+
+models:
+  - name: stg_transactions
+    description: "Очищенные и типизированные транзакции с бизнес-признаками для витрин."
+    columns:
+      - name: transaction_time
+        description: "Время исходной операции."
+        data_tests: [not_null]
+      - name: merchant_name
+        description: "Нормализованное имя мерчанта."
+        data_tests: [not_null]
+      - name: category
+        description: "Категория в нижнем регистре."
+        data_tests: [not_null]
+      - name: amount
+        description: "Сумма; ожидается неотрицательное число."
+        data_tests: [not_null]
+      - name: state
+        description: "Двухбуквенный код штата США."
+        data_tests: [not_null]
+      - name: is_fraud
+        description: "Флаг мошенничества: 0 или 1."
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: amount_segment
+        description: "Человекочитаемый сегмент суммы, рассчитанный макросом amount_bucket."
+        data_tests:
+          - accepted_values:
+              values: [small, medium, large, very_large]

@@ -1,0 +1,20 @@
+version: 2
+
+sources:
+  - name: transactions_db
+    description: "Сырые транзакции, доставленные из Kafka в ClickHouse."
+    schema: transactions_db
+    tables:
+      - name: transactions
+        description: "Одна строка на транзакцию; target равен 1 для мошенничества."
+        columns:
+          - name: transaction_time
+            description: "Локальное время транзакции из исходного train.csv."
+          - name: merch
+            description: "Название мерчанта (продавца)."
+          - name: cat_id
+            description: "Категория покупки."
+          - name: amount
+            description: "Сумма транзакции в условных денежных единицах."
+          - name: target
+            description: "Метка: 1 — фрод, 0 — обычная транзакция."

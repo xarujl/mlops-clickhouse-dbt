@@ -1,0 +1,19 @@
+name: transactions_analytics
+version: '1.0.0'
+config-version: 2
+profile: transactions_analytics
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  transactions_analytics:
+    staging:
+      +materialized: view
+    marts:
+      +materialized: table
+      +tags: ["marts"]

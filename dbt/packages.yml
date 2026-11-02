@@ -1,0 +1,10 @@
+packages:
+  # Git sources avoid dbt Hub's package index, which is unreachable from some
+  # networks. Pinning commit SHAs keeps installs reproducible.
+  - git: https://github.com/dbt-labs/dbt-utils.git
+    revision: e164c645238ca98f21b2ecc558912b94b3d75a9f
+  # dbt-expectations depends on calogica/dbt_date; declaring it again here
+  # creates a duplicate project named dbt_date in dbt 1.8. The macro is still
+  # installed transitively and used by the models.
+  - git: https://github.com/calogica/dbt-expectations.git
+    revision: c7dc2af8e1bd00b24583bea88cd883b88b706aab

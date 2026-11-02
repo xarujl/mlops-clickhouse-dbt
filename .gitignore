@@ -1,0 +1,8 @@
+.venv/
+.venv-*/
+__pycache__/
+*.py[cod]
+dbt/profiles.yml
+dbt/target/
+dbt/dbt_packages/
+*.csv
